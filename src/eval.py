@@ -1,31 +1,75 @@
-import os, torch, pandas as pd
-from sklearn.metrics import classification_report, confusion_matrix
-from train import HausaDataset, SentimentModel, pad_sequence, numericalize, MAX_LEN
+import argparse
+from pathlib import Path
+import pandas as pd
+import json
+from sklearn.metrics import classification_report, f1_score, accuracy_score, precision_score, recall_score
+from joblib import load
 
-DATA_PATH = os.path.join("data", "train_hausa.csv")
-MODEL_PATH = "models/hausa_sentiment_custom.pt"
+from utils import preprocessor  # HausaTextPreprocessor instance
 
-checkpoint = torch.load(MODEL_PATH, map_location="cpu")
-stoi, itos = checkpoint["stoi"], checkpoint["itos"]
-label2id, id2label = checkpoint["label2id"], checkpoint["id2label"]
 
-df = pd.read_csv(DATA_PATH)
-test_df = df.sample(frac=0.2, random_state=42)
+def load_data(csv_path: Path) -> pd.DataFrame:
+    """Load and preprocess dataset for evaluation."""
+    df = pd.read_csv(csv_path)
+    if "tweet" in df.columns and "text" not in df.columns:
+        df = df.rename(columns={"tweet": "text"})
+    if "text" not in df.columns or "label" not in df.columns:
+        raise ValueError("CSV must have columns: text,label (or tweet,label)")
 
-test_ds = HausaDataset(test_df)
-test_loader = torch.utils.data.DataLoader(test_ds, batch_size=32)
+    # Apply Hausa preprocessing
+    df["text"] = df["text"].astype(str).map(preprocessor.preprocess)
+    return df
 
-model = SentimentModel(len(itos), 128, 128, len(label2id))
-model.load_state_dict(checkpoint["model_state"])
-model.eval()
 
-preds, labels = [], []
-with torch.no_grad():
-    for X, y in test_loader:
-        outputs = model(X)
-        pred = torch.argmax(outputs, dim=1)
-        preds.extend(pred.numpy())
-        labels.extend(y.numpy())
+def evaluate(model_path: Path, test_csv: Path, report_path: Path) -> None:
+    """Evaluate a trained model on a test set and save metrics."""
+    print(f"Loading model from {model_path}...")
+    model = load(model_path)
 
-print(classification_report(labels, preds, target_names=[id2label[i] for i in range(len(id2label))]))
-print(confusion_matrix(labels, preds))
+    print(f"Loading test data from {test_csv}...")
+    test_df = load_data(test_csv)
+
+    X_test, y_test = test_df["text"], test_df["label"]
+
+    print("Evaluating model...")
+    preds = model.predict(X_test)
+
+    acc = accuracy_score(y_test, preds)
+    f1 = f1_score(y_test, preds, average="macro")
+    precision = precision_score(y_test, preds, average="macro")
+    recall = recall_score(y_test, preds, average="macro")
+
+    # Save metrics to JSON
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    metrics = {
+        "task": "sentiment_analysis",
+        "language": "hausa",
+        "accuracy": acc,
+        "macro_f1": f1,
+        "precision": precision,
+        "recall": recall,
+        "classification_report": classification_report(y_test, preds, output_dict=True),
+    }
+    with open(report_path, "w", encoding="utf-8") as f:
+        json.dump(metrics, f, indent=4)
+
+    print("\n=== Evaluation Results ===")
+    print(f"Accuracy:  {acc:.3f}")
+    print(f"Macro-F1:  {f1:.3f}")
+    print(f"Precision: {precision:.3f}")
+    print(f"Recall:    {recall:.3f}\n")
+    print(f"Metrics saved to {report_path}")
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Evaluate a trained Hausa sentiment model.")
+    parser.add_argument("--model_path", type=str, default="models/hausa_model.joblib", help="Path to trained model (.joblib)")
+    parser.add_argument("--test_csv", type=str, default="data/test.csv", help="Path to test CSV file (default: data/test.csv)")
+    parser.add_argument("--report_path", type=str, default="reports/metric.json", help="Path to save evaluation metrics JSON")
+    args = parser.parse_args()
+
+    evaluate(Path(args.model_path), Path(args.test_csv), Path(args.report_path))
+
+
+if __name__ == "__main__":
+    main()
