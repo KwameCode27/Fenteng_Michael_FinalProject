@@ -92,6 +92,7 @@ def train_model(train_csv: Path, model_path: Path, results_path: Path):
         "features__word_tfidf__max_features": [10000, 30000],
     }
 
+# display progress
     print("[INFO] Running GridSearchCV...")
     grid = GridSearchCV(
         pipeline,
