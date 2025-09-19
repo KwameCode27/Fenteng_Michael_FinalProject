@@ -41,7 +41,7 @@ project/
 Clone the repository and install requirements:
 
 ```bash
-git clone https://github.com/your-username/hausa-sentiment-analysis.git
+git clone https://github.com/your-username/Fenteng_Michael_FinalProject.git
 cd hausa-sentiment-analysis
 pip install -r requirements.txt
 ````
