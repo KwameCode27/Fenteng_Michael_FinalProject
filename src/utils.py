@@ -190,5 +190,11 @@ class HausaTextPreprocessor:
         
         return stats
 
+
+
+def get_text_length(X):
+    """Return text lengths as numeric feature."""
+    return np.array([len(t) for t in X]).reshape(-1, 1)
+
 # Instantiate the preprocessor
 preprocessor = HausaTextPreprocessor()
