@@ -1,34 +1,27 @@
 import argparse
 import json
 from pathlib import Path
+from typing import Optional
 
 import pandas as pd
 import numpy as np
 from joblib import dump
 from sklearn.pipeline import Pipeline, FeatureUnion
-from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import FunctionTransformer
 from sklearn.svm import LinearSVC
 from sklearn.metrics import classification_report
-from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.model_selection import GridSearchCV
 
-from utils import preprocessor
+from utils import load_sentiment_dataset, preprocessor
 
 
 # ------------------------
 # Data Loading
 # ------------------------
-def load_data(csv_path: Path) -> pd.DataFrame:
+def load_data(csv_path: Path, lexicon_path: Optional[Path] = None) -> pd.DataFrame:
     """Load and preprocess dataset."""
-    df = pd.read_csv(csv_path)
-    if "tweet" in df.columns and "text" not in df.columns:
-        df = df.rename(columns={"tweet": "text"})
-    if "text" not in df.columns or "label" not in df.columns:
-        raise ValueError("CSV must have columns: text,label (or tweet,label)")
-
-    # Hausa preprocessing
-    df["text"] = df["text"].astype(str).map(preprocessor.preprocess)
-    return df
+    return load_sentiment_dataset(csv_path, lexicon_path=str(lexicon_path) if lexicon_path else None)
 
 
 # ------------------------
@@ -39,25 +32,35 @@ def get_text_length(X):
     return np.array([len(t) for t in X]).reshape(-1, 1)
 
 
+def get_lexicon_features(X):
+    """Return lexicon-derived numeric features for each sample."""
+    rows = []
+    for text in X:
+        features = preprocessor.extract_features(text)
+        rows.append([
+            features["positive_indicators"],
+            features["negative_indicators"],
+            features["sentiment_polarity"],
+            features["text_length"],
+            features["word_count"],
+            features["avg_word_length"],
+            features["unique_word_ratio"],
+            features["exclamation_count"],
+            features["question_count"],
+            features["caps_ratio"],
+            features["hausa_char_ratio"],
+        ])
+    return np.array(rows, dtype=float)
+
+
 # ------------------------
 # Training
 # ------------------------
-def train_model(train_csv: Path, model_path: Path, results_path: Path):
+def train_model(train_csv: Path, dev_csv: Path, model_path: Path, results_path: Path, lexicon_csv: Optional[Path] = None):
     print(f"[INFO] Loading training data from {train_csv}...")
-    df = load_data(train_csv)
-
-    # Train/Test split
-    train_df, test_df = train_test_split(
-        df, test_size=0.2, random_state=42, stratify=df["label"]
-    )
-
-    # Save splits
-    train_split_path = Path("data/train_split.csv")
-    test_split_path = Path("data/test.csv")
-    train_df.to_csv(train_split_path, index=False)
-    test_df.to_csv(test_split_path, index=False)
-    print(f"[INFO] Saved train split → {train_split_path}")
-    print(f"[INFO] Saved test split → {test_split_path}")
+    train_df = load_data(train_csv, lexicon_path=lexicon_csv)
+    print(f"[INFO] Loading validation data from {dev_csv}...")
+    test_df = load_data(dev_csv, lexicon_path=lexicon_csv)
 
     X_train, y_train = train_df["text"], train_df["label"]
     X_test, y_test = test_df["text"], test_df["label"]
@@ -76,6 +79,9 @@ def train_model(train_csv: Path, model_path: Path, results_path: Path):
         )),
         ("length", Pipeline([
             ("extract", FunctionTransformer(get_text_length, validate=False))
+        ])),
+        ("lexicon_features", Pipeline([
+            ("extract", FunctionTransformer(get_lexicon_features, validate=False))
         ]))
     ])
 
@@ -135,8 +141,14 @@ def main():
     parser.add_argument(
         "--train_csv",
         type=str,
-        default="data/train_hausa.csv",
-        help="Path to training CSV (default: data/train_hausa.csv)"
+        default="data/train.tsv",
+        help="Path to training CSV/TSV (default: data/train.tsv)"
+    )
+    parser.add_argument(
+        "--dev_csv",
+        type=str,
+        default="data/dev.tsv",
+        help="Path to validation CSV/TSV (default: data/dev.tsv)"
     )
     parser.add_argument(
         "--model_path",
@@ -150,9 +162,21 @@ def main():
         default="reports/metrics.json",
         help="Where to save training results (default: reports/metrics.json)"
     )
+    parser.add_argument(
+        "--lexicon_csv",
+        type=str,
+        default="data/hausa_aug_lex_train.csv",
+        help="Path to a sentiment lexicon CSV/TSV used for feature engineering (default: data/hausa_aug_lex_train.csv)"
+    )
     args = parser.parse_args()
 
-    train_model(Path(args.train_csv), Path(args.model_path), Path(args.results_path))
+    train_model(
+        Path(args.train_csv),
+        Path(args.dev_csv),
+        Path(args.model_path),
+        Path(args.results_path),
+        Path(args.lexicon_csv) if args.lexicon_csv else None,
+    )
 
 
 if __name__ == "__main__":

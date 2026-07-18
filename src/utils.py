@@ -1,13 +1,14 @@
 # Hausa Text Preprocessing (Enhanced Version)
 import re
 import string
+from pathlib import Path
 from typing import List, Dict, Tuple
 import pandas as pd
 import numpy as np
 from collections import Counter
 
 class HausaTextPreprocessor:
-    def __init__(self):
+    def __init__(self, lexicon_path: str = None):
         # Enhanced Hausa stopwords with additional linguistic research
         self.hausa_stopwords = {
             # Original stopwords (preserved)
@@ -27,19 +28,35 @@ class HausaTextPreprocessor:
         
         self.punctuation = set(string.punctuation)
         self.hausa_chars = set('"abcdefghijklmnopqrstuvwxyz`ʼƙɗɓçäöüÀÁÂÃÈÉÊÌÍÎÒÓÔÕÙÚÛÇÑ"')
+        self.lexicon_path = lexicon_path or (Path(__file__).resolve().parents[1] / "data" / "hausa_aug_lex_train.csv")
         
         # Enhanced: Sentiment indicators for feature extraction
+        # Expanded based on diagnostic analysis and word bias findings
         self.positive_indicators = {
             'kyau', 'mai kyau', 'nagari', 'farin ciki', 'murna', 'jin dadi', 'godiya', 'na gode',
             'alheri', 'albarka', 'madalla', 'zakara', 'kyakkyawa', 'dadi', 'son', 'so', 'dariya',
-            'alhamdulillahi', 'mashallah', 'barka', 'mabrouk', 'yayyafa', 'jin daɗi'
+            'alhamdulillahi', 'mashallah', 'barka', 'mabrouk', 'yayyafa', 'jin daɗi',
+            # Expanded from diagnostic findings
+            'rayuwar', 'matsayin', 'shin', 'maka', 'bata', 'kafin', 'bayyana', 'dama',
+            'abubuwan', 'kuka', 'hai', 'sosai', 'ciki', 'yan', 'nuna', 'cire', 'mutanen',
+            'suke', 'baya', 'sama', 'yace', 'kuwa', 'kowa', 'gare', 'mafi', 'tun',
+            'gida', 'sani', 'shakara', 'gajiya', 'kasua', 'kasuwa', 'yiwa', 'kawo',
+            'sannu', 'sannya', 'kwana', 'hannu', 'kai', 'ido', 'zane'
         }
         
         self.negative_indicators = {
             'mugu', 'mummunan', 'bakin ciki', 'tsoro', 'damuwa', 'haushi', 'bacin rai',
             'rashin', 'kuskure', 'laifi', 'haramun', 'zalunci', 'ban sha\'awa', 'kyama',
-            'kiyayya', 'ɓarna', 'azaba', 'wahala', 'matsala', 'rikici', 'fitina', 'tashin hankali'
+            'kiyayya', 'ɓarna', 'azaba', 'wahala', 'matsala', 'rikici', 'fitina', 'tashin hankali',
+            # Expanded from diagnostic findings
+            'rana', 'damar', 'saka', 'tsammanin', 'fiye', 'yara', 'sauri', 'mamaki',
+            'yawancin', 'akan', 'bayar', 'tafi', 'kawo', 'tashi', 'mana', 'tabbatar',
+            'kashe', 'shekaru', 'kullum', 'kowane', 'dauke', 'din', 'yawa', 'mata',
+            'allah', 'zaka', 'jama\'a', 'hana', 'kusan', 'damina', 'bugi', 'karfi',
+            'karena', 'zazzage', 'aiwu', 'isa', 'taba', 'dada', 'uku', 'gida'
         }
+
+        self.load_lexicon_words(self.lexicon_path)
         
         # Enhanced: Compiled regex patterns for efficiency
         self.patterns = {
@@ -59,6 +76,38 @@ class HausaTextPreprocessor:
                 u"\U000024C2-\U0001F251"  # Enclosed characters
                 "]+", flags=re.UNICODE)
         }
+
+    def load_lexicon_words(self, lexicon_path: str = None) -> None:
+        """Populate sentiment indicator sets from the provided Hausa lexicon CSV."""
+        if lexicon_path is None:
+            lexicon_path = self.lexicon_path
+
+        if not lexicon_path:
+            return
+
+        path = Path(lexicon_path)
+        if not path.exists():
+            return
+
+        try:
+            df = pd.read_csv(path)
+        except Exception:
+            return
+
+        required_columns = {"Hausa", "Polarity"}
+        if not required_columns.issubset(df.columns):
+            return
+
+        for _, row in df.iterrows():
+            expression = str(row.get("Hausa", "")).strip().lower()
+            polarity = str(row.get("Polarity", "")).strip().lower()
+            if not expression:
+                continue
+            expression = re.sub(r"\s+", " ", expression).strip("\"'")
+            if polarity == "positive":
+                self.positive_indicators.add(expression)
+            elif polarity == "negative":
+                self.negative_indicators.add(expression)
 
     def clean_text(self, text: str) -> str:
         """Enhanced text cleaning with better normalization."""
@@ -195,6 +244,31 @@ class HausaTextPreprocessor:
 def get_text_length(X):
     """Return text lengths as numeric feature."""
     return np.array([len(t) for t in X]).reshape(-1, 1)
+
+
+def load_sentiment_dataset(csv_path, preprocess=True, lexicon_path=None, **preprocess_kwargs):
+    """Load a CSV/TSV sentiment dataset with text or tweet plus label columns."""
+    if lexicon_path is not None:
+        preprocessor.load_lexicon_words(lexicon_path)
+
+    csv_path = str(csv_path)
+    sep = "\t" if csv_path.lower().endswith(".tsv") else ","
+    df = pd.read_csv(csv_path, sep=sep)
+
+    if "tweet" in df.columns and "text" not in df.columns:
+        df = df.rename(columns={"tweet": "text"})
+    if "text" not in df.columns or "label" not in df.columns:
+        raise ValueError("Dataset must have columns: text,label or tweet,label")
+
+    df = df[["text", "label"]].dropna()
+
+    if preprocess:
+        df["text"] = df["text"].astype(str).map(
+            lambda text: preprocessor.preprocess(text, **preprocess_kwargs)
+        )
+
+    return df
+
 
 # Instantiate the preprocessor
 preprocessor = HausaTextPreprocessor()

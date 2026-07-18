@@ -5,20 +5,12 @@ import json
 from sklearn.metrics import classification_report, f1_score, accuracy_score, precision_score, recall_score
 from joblib import load
 
-from utils import preprocessor , get_text_length # HausaTextPreprocessor instance
+from utils import get_text_length, load_sentiment_dataset # HausaTextPreprocessor instance
 
 
 def load_data(csv_path: Path) -> pd.DataFrame:
     """Load and preprocess dataset for evaluation."""
-    df = pd.read_csv(csv_path)
-    if "tweet" in df.columns and "text" not in df.columns:
-        df = df.rename(columns={"tweet": "text"})
-    if "text" not in df.columns or "label" not in df.columns:
-        raise ValueError("CSV must have columns: text,label (or tweet,label)")
-
-    # Apply Hausa preprocessing
-    df["text"] = df["text"].astype(str).map(preprocessor.preprocess)
-    return df
+    return load_sentiment_dataset(csv_path)
 
 
 def evaluate(model_path: Path, test_csv: Path, report_path: Path) -> None:
@@ -64,7 +56,7 @@ def evaluate(model_path: Path, test_csv: Path, report_path: Path) -> None:
 def main():
     parser = argparse.ArgumentParser(description="Evaluate a trained Hausa sentiment model.")
     parser.add_argument("--model_path", type=str, default="models/hausa_model.joblib", help="Path to trained model (.joblib)")
-    parser.add_argument("--test_csv", type=str, default="data/test.csv", help="Path to test CSV file (default: data/test.csv)")
+    parser.add_argument("--test_csv", type=str, default="data/test.tsv", help="Path to test CSV/TSV file (default: data/test.tsv)")
     parser.add_argument("--report_path", type=str, default="reports/metrics.json", help="Path to save evaluation metrics JSON")
     args = parser.parse_args()
 

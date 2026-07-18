@@ -11,7 +11,7 @@ It is built to handle large datasets (600k+ rows) and can be extended to support
 ```
 
 project/
-├── data/               # Raw and processed data (train.csv, test.csv)
+├── data/               # Raw and processed data (train.tsv, dev.tsv, test.tsv)
 ├── models/             # Saved models (.joblib)
 ├── reports/            # Evaluation reports (metrics.json, classification reports)
 ├── src/
@@ -55,7 +55,7 @@ pip install -r requirements.txt
 Run `train.py` with your dataset:
 
 ```bash
-python src/train.py --train_csv data/train.csv --model_path models/svm_tfidf.joblib
+python src/train_fast.py --train_csv data/train.tsv --dev_csv data/dev.tsv --model_path models/hausa_model.joblib
 ```
 
 * The script:
@@ -72,7 +72,7 @@ python src/train.py --train_csv data/train.csv --model_path models/svm_tfidf.job
 Run `eval.py` on the saved model:
 
 ```bash
-python src/eval.py --model_path models/svm_tfidf.joblib --test_csv data/test.csv
+python src/eval.py --model_path models/hausa_model.joblib --test_csv data/test.tsv
 ```
 
 * The script:
@@ -123,7 +123,8 @@ Text preprocessing is handled in `utils.py` using a custom `HausaTextPreprocesso
 * New datasets:
 
   * Place them in `data/`
-  * Ensure they have at least two columns: `text`, `label`.
+  * Ensure they have at least two columns: `text`, `label` or `tweet`, `label`.
+  * CSV and TSV files are supported.
 
 ---
 

@@ -1,0 +1,44 @@
+{
+  "best_model": "LogisticRegression",
+  "accuracy": 0.4998432695465266,
+  "macro_f1": 0.49929072281086445,
+  "all_results": {
+    "MultinomialNB": {
+      "accuracy": 0.5185837537689942,
+      "f1": 0.4343396740207214,
+      "status": "success"
+    },
+    "LogisticRegression": {
+      "accuracy": 0.4998432695465266,
+      "f1": 0.49929072281086445,
+      "status": "success"
+    }
+  },
+  "classification_report": {
+    "Negative": {
+      "precision": 0.4724203590642568,
+      "recall": 0.4933480628106999,
+      "f1-score": 0.48265746466260606,
+      "support": 63365.0
+    },
+    "Positive": {
+      "precision": 0.5266013920018875,
+      "recall": 0.5056709570536511,
+      "f1-score": 0.5159239809591228,
+      "support": 70623.0
+    },
+    "accuracy": 0.4998432695465266,
+    "macro avg": {
+      "precision": 0.49951087553307216,
+      "recall": 0.49950950993217547,
+      "f1-score": 0.49929072281086445,
+      "support": 133988.0
+    },
+    "weighted avg": {
+      "precision": 0.5009783425340772,
+      "recall": 0.4998432695465266,
+      "f1-score": 0.5001917302715331,
+      "support": 133988.0
+    }
+  }
+}
