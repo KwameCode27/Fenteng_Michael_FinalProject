@@ -8,12 +8,37 @@ import numpy as np
 from joblib import dump
 from sklearn.pipeline import Pipeline, FeatureUnion
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.preprocessing import FunctionTransformer
-from sklearn.svm import LinearSVC
+from sklearn.preprocessing import FunctionTransformer, StandardScaler
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report
 from sklearn.model_selection import GridSearchCV
 
 from utils import load_sentiment_dataset, preprocessor
+
+
+MODEL_DEFINITIONS = {
+    "multinomial_nb": {
+        "display_name": "Multinomial Naïve Bayes",
+        "estimator": MultinomialNB(),
+        "param_grid": {
+            "clf__alpha": [0.1, 0.5, 1.0],
+        },
+    },
+    "logistic_regression": {
+        "display_name": "Logistic Regression",
+        "estimator": LogisticRegression(
+            max_iter=5000,
+            solver="lbfgs",
+            class_weight="balanced",
+            random_state=42,
+            tol=1e-4,
+        ),
+        "param_grid": {
+            "clf__C": [0.1, 1, 10],
+        },
+    },
+}
 
 
 # ------------------------
@@ -56,7 +81,45 @@ def get_lexicon_features(X):
 # ------------------------
 # Training
 # ------------------------
-def train_model(train_csv: Path, dev_csv: Path, model_path: Path, results_path: Path, lexicon_csv: Optional[Path] = None):
+def build_model_pipeline(model_name: str = "multinomial_nb") -> Pipeline:
+    if model_name not in MODEL_DEFINITIONS:
+        raise ValueError(f"Unsupported model: {model_name}")
+
+    char_tfidf = ("char_tfidf", TfidfVectorizer(
+        analyzer="char_wb",
+        ngram_range=(3, 5),
+        max_features=50000
+    ))
+    word_tfidf = ("word_tfidf", TfidfVectorizer(
+        analyzer="word",
+        ngram_range=(1, 2),
+        max_features=30000
+    ))
+
+    if model_name == "multinomial_nb":
+        features = FeatureUnion([char_tfidf, word_tfidf])
+    else:
+        features = FeatureUnion([
+            char_tfidf,
+            word_tfidf,
+            ("length", Pipeline([
+                ("extract", FunctionTransformer(get_text_length, validate=False)),
+                ("scale", StandardScaler(with_mean=False))
+            ])),
+            ("lexicon_features", Pipeline([
+                ("extract", FunctionTransformer(get_lexicon_features, validate=False)),
+                ("scale", StandardScaler(with_mean=False))
+            ]))
+        ])
+
+    pipeline = Pipeline([
+        ("features", features),
+        ("clf", MODEL_DEFINITIONS[model_name]["estimator"])
+    ])
+    return pipeline
+
+
+def train_model(train_csv: Path, dev_csv: Path, model_path: Path, results_path: Path, lexicon_csv: Optional[Path] = None, model_name: str = "multinomial_nb"):
     print(f"[INFO] Loading training data from {train_csv}...")
     train_df = load_data(train_csv, lexicon_path=lexicon_csv)
     print(f"[INFO] Loading validation data from {dev_csv}...")
@@ -65,48 +128,23 @@ def train_model(train_csv: Path, dev_csv: Path, model_path: Path, results_path: 
     X_train, y_train = train_df["text"], train_df["label"]
     X_test, y_test = test_df["text"], test_df["label"]
 
-    # FeatureUnion: char n-grams + word n-grams + text length
-    features = FeatureUnion([
-        ("char_tfidf", TfidfVectorizer(
-            analyzer="char_wb",
-            ngram_range=(3, 5),
-            max_features=50000
-        )),
-        ("word_tfidf", TfidfVectorizer(
-            analyzer="word",
-            ngram_range=(1, 2),
-            max_features=30000
-        )),
-        ("length", Pipeline([
-            ("extract", FunctionTransformer(get_text_length, validate=False))
-        ])),
-        ("lexicon_features", Pipeline([
-            ("extract", FunctionTransformer(get_lexicon_features, validate=False))
-        ]))
-    ])
-
-    pipeline = Pipeline([
-        ("features", features),
-        ("clf", LinearSVC(class_weight="balanced", random_state=42))
-    ])
-
-
-    # Hyperparameter tuning
+    pipeline = build_model_pipeline(model_name)
+    model_config = MODEL_DEFINITIONS[model_name]
     param_grid = {
-        "clf__C": [0.1, 1, 10],
+        **model_config["param_grid"],
         "features__char_tfidf__max_features": [20000, 50000],
         "features__word_tfidf__max_features": [10000, 30000],
     }
 
-# display progress
+    print(f"[INFO] Training using {model_config['display_name']}...")
     print("[INFO] Running GridSearchCV...")
     grid = GridSearchCV(
         pipeline,
         param_grid=param_grid,
         scoring="f1_macro",
-        cv=3,
+        cv=2,
         n_jobs=1,
-        verbose=2
+        verbose=1
     )
 
     grid.fit(X_train, y_train)
@@ -114,20 +152,19 @@ def train_model(train_csv: Path, dev_csv: Path, model_path: Path, results_path: 
     best_model = grid.best_estimator_
     print(f"[INFO] Best Params: {grid.best_params_}")
 
-    # Evaluate
     y_pred = best_model.predict(X_test)
     report = classification_report(y_test, y_pred, output_dict=True)
 
-    # Save metrics
     results_path.parent.mkdir(parents=True, exist_ok=True)
     with open(results_path, "w") as f:
         json.dump({
+            "model": model_name,
+            "model_display_name": model_config["display_name"],
             "best_params": grid.best_params_,
             "metrics": report
         }, f, indent=4)
     print(f"[INFO] Metrics saved → {results_path}")
 
-    # Save model
     model_path.parent.mkdir(parents=True, exist_ok=True)
     dump(best_model, model_path)
     print(f"[INFO] Model saved → {model_path}")
@@ -168,6 +205,13 @@ def main():
         default="data/hausa_aug_lex_train.csv",
         help="Path to a sentiment lexicon CSV/TSV used for feature engineering (default: data/hausa_aug_lex_train.csv)"
     )
+    parser.add_argument(
+        "--model_name",
+        type=str,
+        default="multinomial_nb",
+        choices=list(MODEL_DEFINITIONS.keys()),
+        help="Model to train: multinomial_nb or logistic_regression"
+    )
     args = parser.parse_args()
 
     train_model(
@@ -176,6 +220,7 @@ def main():
         Path(args.model_path),
         Path(args.results_path),
         Path(args.lexicon_csv) if args.lexicon_csv else None,
+        model_name=args.model_name,
     )
 
 

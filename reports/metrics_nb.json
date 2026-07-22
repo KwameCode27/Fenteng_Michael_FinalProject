@@ -1,0 +1,42 @@
+{
+    "model": "multinomial_nb",
+    "model_display_name": "Multinomial Na\u00efve Bayes",
+    "best_params": {
+        "clf__alpha": 0.5,
+        "features__char_tfidf__max_features": 20000,
+        "features__word_tfidf__max_features": 10000
+    },
+    "metrics": {
+        "negative": {
+            "precision": 0.7006507592190889,
+            "recall": 0.7225950782997763,
+            "f1-score": 0.711453744493392,
+            "support": 894.0
+        },
+        "neutral": {
+            "precision": 0.6717391304347826,
+            "recall": 0.6897321428571429,
+            "f1-score": 0.6806167400881057,
+            "support": 896.0
+        },
+        "positive": {
+            "precision": 0.8491017964071856,
+            "recall": 0.7993235625704622,
+            "f1-score": 0.8234610917537747,
+            "support": 887.0
+        },
+        "accuracy": 0.7370190511766903,
+        "macro avg": {
+            "precision": 0.7404972286870191,
+            "recall": 0.7372169279091271,
+            "f1-score": 0.7385105254450908,
+            "support": 2677.0
+        },
+        "weighted avg": {
+            "precision": 0.740161872627794,
+            "recall": 0.7370190511766903,
+            "f1-score": 0.7382451382449134,
+            "support": 2677.0
+        }
+    }
+}

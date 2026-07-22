@@ -1,141 +1,161 @@
-# Hausa & English Sentiment Analysis
+# Machine Learning-Based Sentiment Analysis for Hausa Social Media Content in Ghana.
 
-This project implements a **sentiment analysis system for Hausa and English tweets/text**.  
-The pipeline covers preprocessing, training, evaluation, and reporting.  
-It is built to handle large datasets (600k+ rows) and can be extended to support other African languages.
+This repository implements a sentiment analysis pipeline for Hausa and English social-media text. It supports data loading, preprocessing, model training, evaluation, and prediction for tasks such as polarity classification.
+
+## Project overview
+
+The current workflow uses a scikit-learn pipeline with:
+
+- custom Hausa text preprocessing
+- TF-IDF features
+- optional lexicon-based features
+- two supported classifiers:
+  - Multinomial Naive Bayes
+  - Logistic Regression
+
+The project is designed to work with CSV and TSV datasets that contain at least a text column and a label column.
 
 ---
 
-## 📌 Project Structure
+## Project structure
 
-```
-
+```text
 project/
-├── data/               # Raw and processed data (train.tsv, dev.tsv, test.tsv)
-├── models/             # Saved models (.joblib)
-├── reports/            # Evaluation reports (metrics.json, classification reports)
+├── data/                  # Training, validation, test, and lexicon datasets
+├── models/                # Trained model artifacts (.joblib)
+├── reports/               # Evaluation metrics and prediction outputs
 ├── src/
-│   ├── train.py        # Training script
-│   ├── eval.py         # Evaluation script
-│   ├── utils.py        # HausaTextPreprocessor + helper functions
+│   ├── train.py           # Training script
+│   ├── eval.py            # Evaluation script
+│   ├── predict.py         # Prediction/inference script
+│   ├── utils.py           # Preprocessing utilities and dataset loader
 │   └── ...
-└── README.md           # This file
-
-````
-
----
-
-## ⚙️ Requirements
-
-- Python **3.9+** (tested up to 3.13)
-- Libraries:
-  - `pandas`
-  - `scikit-learn`
-  - `joblib`
-  - `numpy`
+├── tests/                 # Regression and model-selection tests
+├── requirements.txt       # Python dependencies
+└── README.md              # Project documentation
+```
 
 ---
 
-## 📥 Installation
+## Requirements
 
-Clone the repository and install requirements:
+- Python 3.9+
+- Tested with Python 3.13
+
+Install dependencies with:
 
 ```bash
-git clone https://github.com/your-username/Fenteng_Michael_FinalProject.git
-cd hausa-sentiment-analysis
 pip install -r requirements.txt
-````
+```
 
 ---
 
-## 🚀 Usage
-
-### 1. Training a Model
-
-Run `train.py` with your dataset:
+## Installation
 
 ```bash
-python src/train_fast.py --train_csv data/train.tsv --dev_csv data/dev.tsv --model_path models/hausa_model.joblib
+git clone <repository-url>
+cd Fenteng_Michael_FinalProject
+pip install -r requirements.txt
 ```
-
-* The script:
-
-  * Loads and preprocesses text (Hausa & English).
-  * Splits dataset into train/test (80/20).
-  * Trains a **LinearSVC with TF-IDF char n-grams**.
-  * Saves the model to `models/`.
 
 ---
 
-### 2. Evaluating a Model
+## Training a model
 
-Run `eval.py` on the saved model:
+Train a model with the main training script:
 
 ```bash
-python src/eval.py --model_path models/hausa_model.joblib --test_csv data/test.tsv
+py -3 src/train.py \
+  --train_csv data/train.tsv \
+  --dev_csv data/dev.tsv \
+  --model_path models/hausa_model.joblib \
+  --results_path reports/metrics.json \
+  --lexicon_csv data/hausa_aug_lex_train.csv \
+  --model_name multinomial_nb
 ```
 
-* The script:
+Supported model names:
 
-  * Loads the trained model and test set.
-  * Evaluates with **Accuracy, Macro-F1, Precision, Recall**.
-  * Saves results in `reports/metrics.json`.
+- multinomial_nb
+- logistic_regression
 
-Example output:
+The training script will:
 
-```json
-{
-  "accuracy": 0.68,
-  "macro_f1": 0.62,
-  "precision": 0.64,
-  "recall": 0.61
-}
+- load and preprocess the data
+- build a scikit-learn pipeline
+- train the selected classifier
+- save the model to models/
+- save evaluation results to reports/
+
+---
+
+## Evaluating a model
+
+Evaluate a trained model on a test set:
+
+```bash
+py -3 src/eval.py \
+  --model_path models/hausa_model.joblib \
+  --test_csv data/test.tsv \
+  --report_path reports/metrics.json
+```
+
+The evaluation output includes:
+
+- accuracy
+- macro F1-score
+- precision
+- recall
+- a detailed classification report
+
+---
+
+## Running predictions
+
+Run inference on a new file containing text data:
+
+```bash
+py -3 src/predict.py \
+  --model_path models/hausa_model.joblib \
+  --input_path data/hausa_news_articles.csv \
+  --output_path reports/predictions.csv
+```
+
+The input file may contain columns such as text, tweet, article, or content.
+
+---
+
+## Preprocessing
+
+Text preprocessing is handled in src/utils.py through the HausaTextPreprocessor class. It includes:
+
+- text cleaning
+- punctuation handling
+- stopword removal
+- normalization of Hausa and English social-media text
+- optional lexicon-based feature extraction
+
+---
+
+## Testing
+
+Run the test suite with:
+
+```bash
+py -3 -m pytest -q
 ```
 
 ---
 
-### 3. Preprocessing
+## Notes
 
-Text preprocessing is handled in `utils.py` using a custom `HausaTextPreprocessor`, which:
-
-* Normalizes Hausa text.
-* Removes stopwords, URLs, and emojis.
-* Applies consistent tokenization.
+- The logistic regression path now uses scaled numeric features to improve convergence stability.
+- Large datasets may require additional memory and time during training.
+- For best results, keep the input data consistent and ensure the required columns are present.
 
 ---
 
-## 📊 Results
-
-* With **LinearSVC + TF-IDF char 3–5 grams**, we achieved:
-
-  * **Macro-F1:** \~0.51 on initial runs (600k rows).
-* Future improvements:
-
-  * Use **AfriBERTa** or **XLM-R** for deep learning fine-tuning.
-  * Experiment with data augmentation.
-
----
-
-## 👩‍💻 Developer Guide
-
-* Add new preprocessing rules → edit `utils.py`.
-* Change ML model → modify `train.py` (e.g., swap `LinearSVC` for `LogisticRegression` or `XGBoost`).
-* New datasets:
-
-  * Place them in `data/`
-  * Ensure they have at least two columns: `text`, `label` or `tweet`, `label`.
-  * CSV and TSV files are supported.
-
----
-
-## 📌 Notes
-
-* Large datasets (\~600k rows) may require high memory (8GB+ RAM).
-* For best performance, train with a GPU if moving to Transformer-based models.
-
----
-
-## 📄 License
+## License
 
 MIT License © 2025
 
