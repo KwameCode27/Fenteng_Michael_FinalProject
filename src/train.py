@@ -14,7 +14,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report
 from sklearn.model_selection import GridSearchCV
 
-from utils import load_sentiment_dataset, preprocessor
+from utils import load_sentiment_dataset, preprocessor, get_lexicon_features, get_text_length
 
 
 MODEL_DEFINITIONS = {
@@ -47,35 +47,6 @@ MODEL_DEFINITIONS = {
 def load_data(csv_path: Path, lexicon_path: Optional[Path] = None) -> pd.DataFrame:
     """Load and preprocess dataset."""
     return load_sentiment_dataset(csv_path, lexicon_path=str(lexicon_path) if lexicon_path else None)
-
-
-# ------------------------
-# Custom Feature Extractor
-# ------------------------
-def get_text_length(X):
-    """Return text lengths as numeric feature."""
-    return np.array([len(t) for t in X]).reshape(-1, 1)
-
-
-def get_lexicon_features(X):
-    """Return lexicon-derived numeric features for each sample."""
-    rows = []
-    for text in X:
-        features = preprocessor.extract_features(text)
-        rows.append([
-            features["positive_indicators"],
-            features["negative_indicators"],
-            features["sentiment_polarity"],
-            features["text_length"],
-            features["word_count"],
-            features["avg_word_length"],
-            features["unique_word_ratio"],
-            features["exclamation_count"],
-            features["question_count"],
-            features["caps_ratio"],
-            features["hausa_char_ratio"],
-        ])
-    return np.array(rows, dtype=float)
 
 
 # ------------------------

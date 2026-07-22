@@ -110,6 +110,28 @@ The evaluation output includes:
 
 ---
 
+## Quick commands
+
+### Evaluate the model
+
+```bash
+py -3 src/eval.py --model_path models/hausa_model.joblib --test_csv data/test.tsv --report_path reports/metrics.json
+```
+
+### Predict with the model
+
+```bash
+py -3 src/predict.py --model_path models/hausa_model.joblib --input_path data/hausa_news_articles.csv --output_path reports/predictions.csv
+```
+
+### Run predictions on a custom file
+
+```bash
+py -3 src/predict.py --model_path models/hausa_model.joblib --input_path path/to/your_file.csv --output_path reports/predictions.csv
+```
+
+---
+
 ## Running predictions
 
 Run inference on a new file containing text data:
