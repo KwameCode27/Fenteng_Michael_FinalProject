@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 from joblib import dump
 from sklearn.pipeline import Pipeline, FeatureUnion
-from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from sklearn.preprocessing import FunctionTransformer, StandardScaler
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.linear_model import LogisticRegression
@@ -52,27 +52,33 @@ def load_data(csv_path: Path, lexicon_path: Optional[Path] = None) -> pd.DataFra
 # ------------------------
 # Training
 # ------------------------
-def build_model_pipeline(model_name: str = "multinomial_nb") -> Pipeline:
+def build_model_pipeline(model_name: str = "multinomial_nb", vectorizer_type: str = "tfidf") -> Pipeline:
     if model_name not in MODEL_DEFINITIONS:
         raise ValueError(f"Unsupported model: {model_name}")
+    
+    if vectorizer_type not in ["tfidf", "count"]:
+        raise ValueError(f"Unsupported vectorizer: {vectorizer_type}")
 
-    char_tfidf = ("char_tfidf", TfidfVectorizer(
+    # Select vectorizer class based on type
+    vectorizer_class = TfidfVectorizer if vectorizer_type == "tfidf" else CountVectorizer
+
+    char_vec = ("char_vec", vectorizer_class(
         analyzer="char_wb",
         ngram_range=(3, 5),
         max_features=50000
     ))
-    word_tfidf = ("word_tfidf", TfidfVectorizer(
+    word_vec = ("word_vec", vectorizer_class(
         analyzer="word",
         ngram_range=(1, 2),
         max_features=30000
     ))
 
     if model_name == "multinomial_nb":
-        features = FeatureUnion([char_tfidf, word_tfidf])
+        features = FeatureUnion([char_vec, word_vec])
     else:
         features = FeatureUnion([
-            char_tfidf,
-            word_tfidf,
+            char_vec,
+            word_vec,
             ("length", Pipeline([
                 ("extract", FunctionTransformer(get_text_length, validate=False)),
                 ("scale", StandardScaler(with_mean=False))
@@ -90,7 +96,7 @@ def build_model_pipeline(model_name: str = "multinomial_nb") -> Pipeline:
     return pipeline
 
 
-def train_model(train_csv: Path, dev_csv: Path, model_path: Path, results_path: Path, lexicon_csv: Optional[Path] = None, model_name: str = "multinomial_nb"):
+def train_model(train_csv: Path, dev_csv: Path, model_path: Path, results_path: Path, lexicon_csv: Optional[Path] = None, model_name: str = "multinomial_nb", vectorizer_type: str = "tfidf"):
     print(f"[INFO] Loading training data from {train_csv}...")
     train_df = load_data(train_csv, lexicon_path=lexicon_csv)
     print(f"[INFO] Loading validation data from {dev_csv}...")
@@ -99,15 +105,15 @@ def train_model(train_csv: Path, dev_csv: Path, model_path: Path, results_path: 
     X_train, y_train = train_df["text"], train_df["label"]
     X_test, y_test = test_df["text"], test_df["label"]
 
-    pipeline = build_model_pipeline(model_name)
+    pipeline = build_model_pipeline(model_name, vectorizer_type=vectorizer_type)
     model_config = MODEL_DEFINITIONS[model_name]
     param_grid = {
         **model_config["param_grid"],
-        "features__char_tfidf__max_features": [20000, 50000],
-        "features__word_tfidf__max_features": [10000, 30000],
+        "features__char_vec__max_features": [20000, 50000],
+        "features__word_vec__max_features": [10000, 30000],
     }
 
-    print(f"[INFO] Training using {model_config['display_name']}...")
+    print(f"[INFO] Training {model_config['display_name']} with {vectorizer_type.upper()} vectorizer...")
     print("[INFO] Running GridSearchCV...")
     grid = GridSearchCV(
         pipeline,
@@ -131,6 +137,7 @@ def train_model(train_csv: Path, dev_csv: Path, model_path: Path, results_path: 
         json.dump({
             "model": model_name,
             "model_display_name": model_config["display_name"],
+            "vectorizer": vectorizer_type,
             "best_params": grid.best_params_,
             "metrics": report
         }, f, indent=4)
@@ -183,16 +190,57 @@ def main():
         choices=list(MODEL_DEFINITIONS.keys()),
         help="Model to train: multinomial_nb or logistic_regression"
     )
+    parser.add_argument(
+        "--vectorizer_type",
+        type=str,
+        default="tfidf",
+        choices=["tfidf", "count", "both"],
+        help="Vectorizer type: tfidf, count, or both (default: tfidf)"
+    )
     args = parser.parse_args()
 
-    train_model(
-        Path(args.train_csv),
-        Path(args.dev_csv),
-        Path(args.model_path),
-        Path(args.results_path),
-        Path(args.lexicon_csv) if args.lexicon_csv else None,
-        model_name=args.model_name,
-    )
+    if args.vectorizer_type == "both":
+        # Train with both vectorizers
+        print("\n" + "="*60)
+        print("TRAINING WITH TF-IDF VECTORIZER")
+        print("="*60 + "\n")
+        train_model(
+            Path(args.train_csv),
+            Path(args.dev_csv),
+            Path(args.model_path),
+            Path(args.results_path),
+            Path(args.lexicon_csv) if args.lexicon_csv else None,
+            model_name=args.model_name,
+            vectorizer_type="tfidf",
+        )
+        
+        print("\n" + "="*60)
+        print("TRAINING WITH COUNT VECTORIZER")
+        print("="*60 + "\n")
+        
+        # Update paths for count vectorizer models
+        count_model_path = str(args.model_path).replace(".joblib", "_count.joblib")
+        count_results_path = str(args.results_path).replace(".json", "_count.json")
+        
+        train_model(
+            Path(args.train_csv),
+            Path(args.dev_csv),
+            Path(count_model_path),
+            Path(count_results_path),
+            Path(args.lexicon_csv) if args.lexicon_csv else None,
+            model_name=args.model_name,
+            vectorizer_type="count",
+        )
+    else:
+        train_model(
+            Path(args.train_csv),
+            Path(args.dev_csv),
+            Path(args.model_path),
+            Path(args.results_path),
+            Path(args.lexicon_csv) if args.lexicon_csv else None,
+            model_name=args.model_name,
+            vectorizer_type=args.vectorizer_type,
+        )
 
 
 if __name__ == "__main__":

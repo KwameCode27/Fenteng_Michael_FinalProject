@@ -1,0 +1,41 @@
+{
+    "task": "sentiment_analysis",
+    "language": "hausa",
+    "accuracy": 0.7344899113709221,
+    "macro_f1": 0.7359837236695009,
+    "precision": 0.7381299396569941,
+    "recall": 0.7347938298907591,
+    "classification_report": {
+        "negative": {
+            "precision": 0.6903607969843835,
+            "recall": 0.7288231949971575,
+            "f1-score": 0.709070796460177,
+            "support": 1759.0
+        },
+        "neutral": {
+            "precision": 0.6823725055432373,
+            "recall": 0.6880939072107323,
+            "f1-score": 0.685221263568049,
+            "support": 1789.0
+        },
+        "positive": {
+            "precision": 0.8416565164433617,
+            "recall": 0.7874643874643875,
+            "f1-score": 0.8136591109802768,
+            "support": 1755.0
+        },
+        "accuracy": 0.7344899113709221,
+        "macro avg": {
+            "precision": 0.7381299396569941,
+            "recall": 0.7347938298907591,
+            "f1-score": 0.7359837236695009,
+            "support": 5303.0
+        },
+        "weighted avg": {
+            "precision": 0.7377364210202682,
+            "recall": 0.7344899113709221,
+            "f1-score": 0.7356379617701446,
+            "support": 5303.0
+        }
+    }
+}

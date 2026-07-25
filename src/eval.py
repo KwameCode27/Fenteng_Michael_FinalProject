@@ -57,7 +57,7 @@ def main():
     parser = argparse.ArgumentParser(description="Evaluate a trained Hausa sentiment model.")
     parser.add_argument("--model_path", type=str, default="models/hausa_model.joblib", help="Path to trained model (.joblib)")
     parser.add_argument("--test_csv", type=str, default="data/test.tsv", help="Path to test CSV/TSV file (default: data/test.tsv)")
-    parser.add_argument("--report_path", type=str, default="reports/metrics.json", help="Path to save evaluation metrics JSON")
+    parser.add_argument("--report_path", type=str, default="reports/metrics_eval.json", help="Path to save evaluation metrics JSON")
     args = parser.parse_args()
 
     evaluate(Path(args.model_path), Path(args.test_csv), Path(args.report_path))

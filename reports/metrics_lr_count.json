@@ -1,0 +1,43 @@
+{
+    "model": "logistic_regression",
+    "model_display_name": "Logistic Regression",
+    "vectorizer": "count",
+    "best_params": {
+        "clf__C": 0.1,
+        "features__char_vec__max_features": 50000,
+        "features__word_vec__max_features": 30000
+    },
+    "metrics": {
+        "negative": {
+            "precision": 0.7575757575757576,
+            "recall": 0.6991051454138703,
+            "f1-score": 0.7271669575334497,
+            "support": 894.0
+        },
+        "neutral": {
+            "precision": 0.6872549019607843,
+            "recall": 0.7823660714285714,
+            "f1-score": 0.7317327766179541,
+            "support": 896.0
+        },
+        "positive": {
+            "precision": 0.8653846153846154,
+            "recall": 0.8117249154453213,
+            "f1-score": 0.837696335078534,
+            "support": 887.0
+        },
+        "accuracy": 0.7642883825177438,
+        "macro avg": {
+            "precision": 0.7700717583070524,
+            "recall": 0.7643987107625877,
+            "f1-score": 0.7655320230766459,
+            "support": 2677.0
+        },
+        "weighted avg": {
+            "precision": 0.7697606549405095,
+            "recall": 0.7642883825177438,
+            "f1-score": 0.7653180713855997,
+            "support": 2677.0
+        }
+    }
+}

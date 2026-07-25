@@ -1,41 +1,43 @@
 {
-    "task": "sentiment_analysis",
-    "language": "hausa",
-    "accuracy": 0.7763530077314728,
-    "macro_f1": 0.776988696658286,
-    "precision": 0.7803834582119129,
-    "recall": 0.7763014904606079,
-    "classification_report": {
+    "model": "multinomial_nb",
+    "model_display_name": "Multinomial Na\u00efve Bayes",
+    "vectorizer": "tfidf",
+    "best_params": {
+        "clf__alpha": 0.5,
+        "features__char_vec__max_features": 20000,
+        "features__word_vec__max_features": 10000
+    },
+    "metrics": {
         "negative": {
-            "precision": 0.7778469197261979,
-            "recall": 0.7106310403638431,
-            "f1-score": 0.7427213309566251,
-            "support": 1759.0
+            "precision": 0.7006507592190889,
+            "recall": 0.7225950782997763,
+            "f1-score": 0.711453744493392,
+            "support": 894.0
         },
         "neutral": {
-            "precision": 0.7088544272136068,
-            "recall": 0.7920626048071548,
-            "f1-score": 0.7481520591341078,
-            "support": 1789.0
+            "precision": 0.6717391304347826,
+            "recall": 0.6897321428571429,
+            "f1-score": 0.6806167400881057,
+            "support": 896.0
         },
         "positive": {
-            "precision": 0.854449027695934,
-            "recall": 0.8262108262108262,
-            "f1-score": 0.8400926998841252,
-            "support": 1755.0
+            "precision": 0.8491017964071856,
+            "recall": 0.7993235625704622,
+            "f1-score": 0.8234610917537747,
+            "support": 887.0
         },
-        "accuracy": 0.7763530077314728,
+        "accuracy": 0.7370190511766903,
         "macro avg": {
-            "precision": 0.7803834582119129,
-            "recall": 0.7763014904606079,
-            "f1-score": 0.776988696658286,
-            "support": 5303.0
+            "precision": 0.7404972286870191,
+            "recall": 0.7372169279091271,
+            "f1-score": 0.7385105254450908,
+            "support": 2677.0
         },
         "weighted avg": {
-            "precision": 0.7799229390326021,
-            "recall": 0.7763530077314728,
-            "f1-score": 0.7767779640279582,
-            "support": 5303.0
+            "precision": 0.740161872627794,
+            "recall": 0.7370190511766903,
+            "f1-score": 0.7382451382449134,
+            "support": 2677.0
         }
     }
 }
