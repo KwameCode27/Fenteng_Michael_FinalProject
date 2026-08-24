@@ -14,6 +14,8 @@ The current project now has a working training and evaluation pipeline for Hausa
 - Evaluation is available through src/eval.py
 - Prediction/inference is available through src/predict.py
 - The repository includes regression tests for model selection and pipeline structure
+- Prediction working on Ghanaian based Hausa New content
+- Train and tested model working
 
 ### Current model options
 The training script supports two classifiers:

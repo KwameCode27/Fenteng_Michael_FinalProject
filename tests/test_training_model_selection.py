@@ -31,3 +31,5 @@ def test_build_model_pipeline_returns_expected_classifier_type():
     assert lr_pipeline.named_steps['clf'].max_iter >= 5000
     assert lr_pipeline.named_steps['features'].transformer_list[2][1].named_steps['scale'].__class__.__name__ == 'StandardScaler'
     assert lr_pipeline.named_steps['features'].transformer_list[3][1].named_steps['scale'].__class__.__name__ == 'StandardScaler'
+
+

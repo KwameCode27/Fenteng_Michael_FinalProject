@@ -72,7 +72,9 @@ All results below are from the **held-out AfriSenti Hausa test set** (5,303 samp
 | **Logistic Regression** | **TF-IDF** | **77.6%** | **0.777** | **0.780** | **0.776** |
 | Logistic Regression | Count  | 77.3% | 0.773 | 0.776 | 0.773 |
 
-**Best model: Logistic Regression + TF-IDF**, macro-F1 = **0.777**
+**Current best model: Logistic Regression + TF-IDF**, macro-F1 = **0.777**.
+The training workflow also includes a tuned Linear SVM challenger; evaluate it
+on the held-out test set before replacing the current best model.
 (exceeds the practical utility threshold of 0.70 set in the project methodology).
 
 ### Per-class breakdown (best model)
@@ -191,7 +193,7 @@ python src/train.py \
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--model_name` | `multinomial_nb` | `multinomial_nb` or `logistic_regression` |
+| `--model_name` | `logistic_regression` | `multinomial_nb` or `logistic_regression` |
 | `--vectorizer_type` | `tfidf` | `tfidf`, `count`, or `both` |
 | `--cv` | `5` | GridSearchCV cross-validation folds |
 | `--n_jobs` | `-1` | Parallel workers (`-1` = all CPU cores) |

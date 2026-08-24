@@ -1,0 +1,43 @@
+{
+    "task": "sentiment_analysis",
+    "language": "hausa",
+    "model_path": "models\\hausa_model.joblib",
+    "test_set": "data\\test.tsv",
+    "accuracy": 0.745993,
+    "macro_f1": 0.747426,
+    "macro_precision": 0.749275,
+    "macro_recall": 0.746281,
+    "classification_report": {
+        "negative": {
+            "precision": 0.708105147864184,
+            "recall": 0.7350767481523593,
+            "f1-score": 0.7213389121338912,
+            "support": 1759.0
+        },
+        "neutral": {
+            "precision": 0.6891447368421053,
+            "recall": 0.7026271660145332,
+            "f1-score": 0.6958206476612233,
+            "support": 1789.0
+        },
+        "positive": {
+            "precision": 0.8505747126436781,
+            "recall": 0.8011396011396011,
+            "f1-score": 0.8251173708920188,
+            "support": 1755.0
+        },
+        "accuracy": 0.7459928342447671,
+        "macro avg": {
+            "precision": 0.7492748657833225,
+            "recall": 0.7462811717688312,
+            "f1-score": 0.7474256435623777,
+            "support": 5303.0
+        },
+        "weighted avg": {
+            "precision": 0.7488582896461025,
+            "recall": 0.7459928342447671,
+            "f1-score": 0.7470751029652907,
+            "support": 5303.0
+        }
+    }
+}
